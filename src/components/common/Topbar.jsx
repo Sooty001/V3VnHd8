@@ -6,6 +6,7 @@ import { getCurrentUserMin } from '../../api/api';
 const Topbar = ({ isAuthenticated, propUser }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentUserPhotoUrl, setCurrentUserPhotoUrl] = useState(null);
+    const [currentUserId, setCurrentUserId] = useState(null); // Добавим состояние для ID пользователя
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -14,13 +15,20 @@ const Topbar = ({ isAuthenticated, propUser }) => {
         const fetchUserPhoto = async () => {
             if (isAuthenticated) {
                 const userData = await getCurrentUserMin();
-                if (userData && userData.photoUrl) {
-                    setCurrentUserPhotoUrl(userData.photoUrl);
+                if (userData) {
+                    if (userData.photoUrl) {
+                        setCurrentUserPhotoUrl(userData.photoUrl);
+                    } else {
+                        setCurrentUserPhotoUrl(null);
+                    }
+                    setCurrentUserId(userData.id); // Сохраняем ID пользователя
                 } else {
                     setCurrentUserPhotoUrl(null);
+                    setCurrentUserId(null);
                 }
             } else {
                 setCurrentUserPhotoUrl(null);
+                setCurrentUserId(null);
             }
         };
 
@@ -50,7 +58,24 @@ const Topbar = ({ isAuthenticated, propUser }) => {
         }
     }, [searchQuery, navigate]);
 
-    const finalUserPhotoUrl = currentUserPhotoUrl || (propUser?.photoUrl || 'https://via.placeholder.com/150');
+    // Обработчик для клика по аватару
+    const handleAvatarClick = useCallback(() => {
+        if (isAuthenticated && currentUserId) {
+            navigate(`/profile/${currentUserId}`); // Переходим на страницу профиля пользователя по его ID
+        } else if (isAuthenticated && !currentUserId) {
+            // Если isAuthenticated, но currentUserId почему-то null, можно перейти на базовый профиль,
+            // или показать ошибку, или дождаться загрузки ID.
+            // В данном случае, если ID нет, то это не должно произойти при успешной аутентификации.
+            // Если бы мы хотели на /profile без ID, то: navigate('/profile');
+            navigate('/profile'); // Предположим, что /profile сам разберется, если ID не пришел
+        }
+    }, [isAuthenticated, currentUserId, navigate]);
+
+
+    // Если propUser - это объект пользователя, то его photoUrl может быть использован как запасной,
+    // но если getCurrentUserMin() уже предоставляет URL, то он приоритетнее.
+    // Если propUser не гарантированно имеет ID, то лучше ориентироваться на currentUserId.
+    const finalUserPhotoUrl = currentUserPhotoUrl || (propUser?.photoUrl || '/default-avatar.png'); // Используем заглушку по умолчанию
 
     return (
         <div className="topbar">
@@ -59,7 +84,7 @@ const Topbar = ({ isAuthenticated, propUser }) => {
                     <h1 className="topbar__logo-text">ArtVista</h1>
                 </div>
             </div>
-            
+
             <form className="topbar__search" onSubmit={handleSearchSubmit}>
                 <i className="fa-solid fa-search"></i>
                 <input
@@ -70,9 +95,14 @@ const Topbar = ({ isAuthenticated, propUser }) => {
                 />
             </form>
 
-            <div className="topbar__profile"> 
+            <div className="topbar__profile">
                 {isAuthenticated ? (
-                    <div className="avatar" style={{ backgroundImage: `url('${finalUserPhotoUrl}')` }}></div>
+                    <div
+                        className="avatar"
+                        style={{ backgroundImage: `url('${finalUserPhotoUrl}')`, cursor: 'pointer' }}
+                        onClick={handleAvatarClick} // Добавляем обработчик клика
+                        title="Мой профиль" // Подсказка при наведении
+                    ></div>
                 ) : (
                     null
                 )}
