@@ -1,0 +1,130 @@
+/* src/components/pages/SubscriptionsPage/SubscriptionsPage.css */
+
+.subscriptions-page {
+    padding: 2rem;
+    background-color: #f0f2f5;
+    color: #1c1c1c;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.subscriptions-header {
+    font-family: 'Poppins', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 2rem;
+    color: #000;
+    text-align: center;
+}
+
+.authors-list {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 1.5rem;
+    overflow-x: auto;
+    padding: 1.5rem 0;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: flex-start;
+}
+
+.authors-list::-webkit-scrollbar {
+    display: none;
+}
+
+.author-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    border: 1px solid #e0e0e0;
+
+    flex-shrink: 0;
+    width: 280px;
+    min-width: 250px;
+    max-width: 320px;
+}
+
+.author-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.author-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    padding-bottom: 1rem;
+    cursor: pointer;
+    text-align: center;
+}
+
+.author-avatarq {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #e11d48;
+    flex-shrink: 0;
+}
+
+.author-detailsq {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.author-nameq {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #000;
+    margin: 0;
+    word-break: break-word;
+}
+
+.following-btn {
+    background-color: #e5e7eb;
+    color: #374151;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    flex-shrink: 0;
+    width: 100%;
+    margin-top: auto;
+}
+
+.following-btn:hover {
+    background-color: #d1d5db;
+}
+
+.loading-indicator,
+.empty-state,
+.end-of-results-message {
+    text-align: center;
+    padding: 1rem;
+    font-family: 'Roboto', sans-serif;
+    color: #6b7280;
+    font-size: 1.1rem;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.loading-indicator {
+    font-weight: bold;
+    color: #e11d48;
+}
