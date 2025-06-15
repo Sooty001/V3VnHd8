@@ -1,15 +1,12 @@
 import React from 'react';
-import { useTheme } from '../../context/ThemeContext';
 import { useNavigate } from 'react-router-dom'; // Импортируем useNavigate
 
 const HeroSection = () => {
     const navigate = useNavigate();
-    const { theme } = useTheme();
 
     const handleUploadArtClick = () => {
         navigate('/upload-art');
     };
-
 
     return (
         <section className="hero-section">

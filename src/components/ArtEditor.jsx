@@ -5,19 +5,18 @@ import { createArt, updateArt, getArtAndAuthorDetails, getArtTags } from '../api
 const ArtEditor = () => {
     const navigate = useNavigate();
     const { artId } = useParams();
-    const isNewArt = !artId; // isNewArt будет true, если artId не определен
+    const isNewArt = !artId;
 
     const [loading, setLoading] = useState(isNewArt ? false : true);
     const [error, setError] = useState(null);
     const [formData, setFormData] = useState({
-        // Инициализируем id как artId из useParams.
-        // Если artId undefined (при создании), то id будет undefined.
-        // Если artId есть (при редактировании), то id будет установлен.
-        id: artId, 
+        id: artId,
         name: '',
         description: '',
         imageFile: null,
-        tags: [{ name: '' }],
+        // Инициализируем теги с пустым name и undefined id для новых артов.
+        // При редактировании они не будут использоваться для отображения/изменения.
+        tags: [{ id: undefined, name: '' }],
     });
     const [imagePreview, setImagePreview] = useState(null);
     const [currentImageUrl, setCurrentImageUrl] = useState('');
@@ -25,7 +24,6 @@ const ArtEditor = () => {
 
     useEffect(() => {
         if (!isNewArt) {
-            // В режиме редактирования, artId ДОЛЖЕН быть. Если его нет, это ошибка роутинга.
             if (!artId) {
                 setError(new Error("Ошибка: ID работы не найден в URL для редактирования."));
                 setLoading(false);
@@ -36,19 +34,20 @@ const ArtEditor = () => {
                 setLoading(true);
                 try {
                     const artDetails = await getArtAndAuthorDetails(artId);
-                    const artTags = await getArtTags(artId);
+                    // Теги все равно загружаются, но не используются для formData.tags,
+                    // так как они не будут отображаться или отправляться обратно.
+                    // const artTags = await getArtTags(artId); // Можно даже не фетчить их, если они не нужны для других целей
 
                     setFormData({
-                        id: artDetails.id, // Обновляем ID из полученных данных
+                        id: artDetails.id,
                         name: artDetails.name || '',
                         description: artDetails.description || '',
-                        imageFile: null,
-                        tags: artTags.length > 0 ? artTags.map(tag => ({ name: tag.name })) : [{ name: '' }],
+                        imageFile: null, // Файл изображения не загружается при редактировании
+                        tags: [{ id: undefined, name: '' }], // Для редактирования теги не используются, поэтому сбрасываем или оставляем дефолт
                     });
                     setCurrentImageUrl(artDetails.imageUrl || '');
                     setImagePreview(artDetails.imageUrl || null);
                 } catch (err) {
-                    console.error("Failed to fetch art details for editing:", err);
                     setError(new Error(err.message || "Не удалось загрузить данные работы."));
                 } finally {
                     setLoading(false);
@@ -56,7 +55,7 @@ const ArtEditor = () => {
             };
             fetchArtDetails();
         }
-    }, [artId, isNewArt]); // Зависимости корректны
+    }, [artId, isNewArt]);
 
     const handleChange = useCallback((e) => {
         const { name, value } = e.target;
@@ -70,15 +69,17 @@ const ArtEditor = () => {
             setImagePreview(URL.createObjectURL(file));
         } else {
             setFormData(prev => ({ ...prev, imageFile: null }));
+            // При отсутствии нового файла, возвращаемся к текущему URL изображения или null
             setImagePreview(isNewArt ? null : currentImageUrl);
         }
     }, [isNewArt, currentImageUrl]);
 
+    // Эти функции будут использоваться только при создании нового арта
     const handleTagChange = useCallback((index, e) => {
         const { value } = e.target;
         setFormData(prev => {
             const newTags = [...prev.tags];
-            newTags[index] = { name: value };
+            newTags[index] = { ...newTags[index], name: value };
             return { ...prev, tags: newTags };
         });
     }, []);
@@ -86,7 +87,7 @@ const ArtEditor = () => {
     const addTagField = useCallback(() => {
         setFormData(prev => ({
             ...prev,
-            tags: [...prev.tags, { name: '' }]
+            tags: [...prev.tags, { id: undefined, name: '' }] // Новые теги без id
         }));
     }, []);
 
@@ -107,13 +108,9 @@ const ArtEditor = () => {
         dataToSend.append('description', formData.description);
 
         if (!isNewArt) {
-            // В режиме редактирования, artId ДОЛЖЕН быть, и formData.id ДОЛЖЕН быть установлен из useEffect.
-            // Если formData.id все еще не установлен здесь, значит, что-то пошло не так в useEffect
-            // или вы пытаетесь отправить форму до того, как данные загрузились.
-            if (formData.id) { 
+            if (formData.id) {
                 dataToSend.append('id', formData.id);
             } else {
-                console.error("Art ID is missing in edit mode before submission!");
                 setError(new Error("Не удалось обновить работу: ID отсутствует. Пожалуйста, попробуйте перезагрузить страницу."));
                 setIsSubmitting(false);
                 return;
@@ -127,23 +124,27 @@ const ArtEditor = () => {
             setIsSubmitting(false);
             return;
         }
-        
-        formData.tags.forEach((tag, index) => {
-            if (tag.name.trim()) {
-                dataToSend.append(`tags[${index}].name`, tag.name.trim());
-            }
-        });
+
+        // Теги добавляются в FormData только при создании нового арта
+        if (isNewArt) {
+            formData.tags.forEach((tag, index) => {
+                if (tag.name.trim()) {
+                    // При создании у тегов не будет id, поэтому отправляем только name
+                    dataToSend.append(`tags[${index}].name`, tag.name.trim());
+                }
+            });
+        }
+        // При редактировании теги не отправляются.
 
         try {
             if (isNewArt) {
                 await createArt(dataToSend);
-                navigate('/profile'); 
+                navigate('/profile');
             } else {
                 await updateArt(dataToSend);
-                navigate('/profile'); 
+                navigate('/profile');
             }
         } catch (err) {
-            console.error("Failed to submit art:", err.response?.data || err.message);
             setError(new Error(err.response?.data?.message || err.message || "Не удалось сохранить работу."));
         } finally {
             setIsSubmitting(false);
@@ -190,6 +191,7 @@ const ArtEditor = () => {
                         id="image-upload"
                         accept="image/*"
                         onChange={handleFileChange}
+                        // required только при создании нового арта, если еще нет файла
                         required={isNewArt && !formData.imageFile}
                         className="file-input"
                     />
@@ -221,31 +223,33 @@ const ArtEditor = () => {
                     ></textarea>
                 </div>
 
-                <div className="form-group social-networks-group">
-                    <label>Теги:</label>
-                    {formData.tags.map((tag, index) => (
-                        <div key={index} className="social-network-input-group">
-                            <input
-                                type="text"
-                                value={tag.name}
-                                onChange={(e) => handleTagChange(index, e)}
-                                placeholder="Название тега"
-                            />
-                            {formData.tags.length > 1 && (
-                                <button
-                                    type="button"
-                                    onClick={() => removeTagField(index)}
-                                    className="remove-social-btn"
-                                >
-                                    Удалить
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                    <button type="button" onClick={addTagField} className="add-social-btn">
-                        Добавить тег
-                    </button>
-                </div>
+                {isNewArt && ( // Секция тегов отображается только при создании нового арта
+                    <div className="form-group social-networks-group">
+                        <label>Теги:</label>
+                        {formData.tags.map((tag, index) => (
+                            <div key={index} className="social-network-input-group">
+                                <input
+                                    type="text"
+                                    value={tag.name}
+                                    onChange={(e) => handleTagChange(index, e)}
+                                    placeholder="Название тега"
+                                />
+                                {formData.tags.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => removeTagField(index)}
+                                        className="remove-social-btn"
+                                    >
+                                        Удалить
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                        <button type="button" onClick={addTagField} className="add-social-btn">
+                            Добавить тег
+                        </button>
+                    </div>
+                )}
 
                 {error && <div className="error-message">{error.message}</div>}
 
