@@ -9,6 +9,7 @@ const ArtFilters = ({ activeTab, onTabChange }) => {
     { key: 'recommended', name: 'Рекомендации' },
     { key: 'trending', name: 'Популярное' },
     { key: 'subscriptions', name: 'Подписки' },
+    { key: 'latest', name: 'Послднее' }
   ];
 
   useEffect(() => {
